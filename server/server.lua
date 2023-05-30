@@ -39,7 +39,7 @@ RegisterNetEvent('rsg-billing:server:paybills', function(data)
     end
     local src = source
     local PayingPlayer = RSGCore.Functions.GetPlayer(src)
-    local PaidPlayer = RSGCore.Functions.GetPlayerByCitizenId(data.sendercitizenid)
+    local PaidPlayer = RSGCore.Functions.GetPlayerByCitizenId(data.sendercitizenid) or RSGCore.Functions.GetOfflinePlayerByCitizenId(data.sendercitizenid)
     if data.society == 'personal' then
         if PayingPlayer.PlayerData.money.cash >= data.amount then
             PayingPlayer.Functions.RemoveMoney("cash", data.amount, "pay-bill")
