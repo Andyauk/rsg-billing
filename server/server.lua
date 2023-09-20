@@ -52,7 +52,7 @@ RegisterNetEvent('rsg-billing:server:paybills', function(data)
     else
         if PayingPlayer.PlayerData.money.cash >= data.amount then
             PayingPlayer.Functions.RemoveMoney("cash", data.amount, "pay-bill")
-            exports['rsg-management']:AddMoney(data.society, data.amount)
+            exports['rsg-bossmenu']:AddMoney(data.society, data.amount)
             exports.oxmysql:execute('DELETE FROM player_bills WHERE id = ?', {data.billid})
             TriggerClientEvent('RSGCore:Notify', src, 'Bill has been paid for '..data.amount..'$', 'success')
         else
