@@ -10,6 +10,7 @@ client_scripts {
 }
 
 server_scripts {
+    '@oxmysql/lib/MySQL.lua',
     'server/server.lua'
 }
 
@@ -23,9 +24,6 @@ shared_scripts {
 dependency {
     'ox_lib',
     'rsg-core',
-    'rsg-input',
-    'rsg-menu',
-    'rsg-bossmenu'
 }
 
 lua54 'yes'

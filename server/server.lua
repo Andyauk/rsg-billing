@@ -1,30 +1,24 @@
 local RSGCore = exports['rsg-core']:GetCoreObject()
 
 -- check your bills recived
-RSGCore.Functions.CreateCallback('rsg-billing:server:checkbills', function(source, cb, target)
-    local Player = RSGCore.Functions.GetPlayer(target)
-    if Player then
-        local citizenid = Player.PlayerData.citizenid
-        exports.oxmysql:execute('SELECT * FROM player_bills WHERE citizenid = ?', {citizenid}, function(bills)
-            cb(bills, citizenid)
-        end)
-    else
-        cb({})
-    end
+RSGCore.Functions.CreateCallback('rsg-billing:server:checkbills', function(source, cb, citizenid)
+    MySQL.query('SELECT * FROM player_bills WHERE citizenid = ?', {citizenid}, function(result)
+        if result[1] ~= nil then
+            cb(result)
+        else
+            cb(nil)
+        end
+    end)
 end)
 
--- check your bills sent
 RSGCore.Functions.CreateCallback('rsg-billing:server:checkSentBills', function(source, cb, citizenid)
-    local src = source
-    local Player = RSGCore.Functions.GetPlayer(src)
-    if Player then
-        local citizenid = Player.PlayerData.citizenid
-        exports.oxmysql:execute('SELECT * FROM player_bills WHERE sendercitizenid = ?', {citizenid}, function(sentbills)
-            cb(sentbills, citizenid)
-        end)
-    else
-        cb({})
-    end
+    MySQL.query('SELECT * FROM player_bills WHERE sendercitizenid = ?', {citizenid}, function(result)
+        if result[1] ~= nil then
+            cb(result)
+        else
+            cb(nil)
+        end
+    end)
 end)
 
 -- pay bills

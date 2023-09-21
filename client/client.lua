@@ -1,77 +1,68 @@
 local RSGCore = exports['rsg-core']:GetCoreObject()
 local jobcheck = false
 
--- billing menu
+-- main billing menu
 RegisterNetEvent('rsg-billing:client:billingMenu', function()
-    local PlayerId = GetPlayerServerId(PlayerId())
-    local BillsOptions = {
-        {
-            header = 'Billing Menu',
-            isMenuHeader = true,
-            icon = 'fas fa-file-invoice-dollar',
-        },
-        {
-            header = 'Send Bill',
-            icon = 'fas fa-dollar-sign',
-            txt    = '',
-            params = { event = 'rsg-billing:client:billplayer' }
-        },
-        {
-            header = 'View Your Bills',
-            icon = 'fas fa-dollar-sign',
-            txt    = '',
-            params = { event = 'rsg-billing:client:checkbills' }
-        },
-        {
-            header = 'Cancel Sent Bill',
-            icon = 'fas fa-dollar-sign',
-            txt    = '',
-            params = { event = 'rsg-billing:client:deletebills' }
-        },
-        {
-            header = 'close',
-            icon   = 'fa-solid fa-circle-xmark',
-            txt    = '',
-            params = { event = 'rsg-menu:closeMenu', }
-        },
-    }
-    exports['rsg-menu']:openMenu(BillsOptions)
-end)
-
--- send bill to player (client:billplayer)
-RegisterNetEvent('rsg-billing:client:billplayer', function()
-    local dialog = exports['rsg-input']:ShowInput({
-    header = "Create Bill",
-    submitText = "Send Bill",
-        inputs = {
+    lib.registerContext({
+        id = 'bill_mainmenu',
+        title = 'Billing Menu',
+        options = {
             {
-                text = "PlayerID",
-                name = "playerid",
-                type = "number",
-                isRequired = false,
+                title = 'Send Bill',
+                description = '',
+                icon = 'fas fa-dollar-sign',
+                event = 'rsg-billing:client:billplayer',
+                arrow = true
             },
             {
-                text = "Bill Price ($)",
-                name = "billprice",
-                type = "number",
-                isRequired = false,
+                title = 'View Your Bills',
+                description = '',
+                icon = 'fa-solid fa-eye',
+                event = 'rsg-billing:client:checkbills',
+                arrow = true
             },
             {
-                text = "Bill Type",
-                name = "billtype",
-                type = "radio",
-                options = {
-                    { value = "player", text = "Bill as Player" },
-                    { value = "society", text = "Bill as Society" },
-                },
+                title = 'Cancel Sent Bill',
+                description = '',
+                icon = 'fa-solid fa-xmark',
+                iconColor = 'red',
+                event = 'rsg-billing:client:deletebills',
+                arrow = true
             },
         }
     })
-    if dialog == nil then return end
-    if dialog == "" then return RSGCore.Functions.Notify("you didn't write anything", 'error') end
-    if dialog.playerid == "" then return RSGCore.Functions.Notify("you didn't write the player id", 'error') end
-    if dialog.billprice == "" then return RSGCore.Functions.Notify("you didn't write the bill price", 'error') end
-    if dialog.billtype == 'society' then
+    lib.showContext("bill_mainmenu")
+end)
+
+-- bill player
+RegisterNetEvent('rsg-billing:client:billplayer', function()
+    local input = lib.inputDialog('Bill Player', {
+        { 
+            label = 'PlayerID',
+            type = 'number',
+            required = true,
+            icon = 'fa-solid fa-id-card'
+        },
+        { 
+            label = 'Bill Amount',
+            type = 'number',
+            required = true,
+            icon = 'fa-solid fa-dollar-sign'
+        },
+        { 
+            label = 'Bill Type',
+            type = 'select',
+                options = {
+                    { value = "player", label = "Bill as Player" },
+                    { value = "society", label = "Bill as Society" },
+                },
+            required = true,
+            icon = 'fa-solid fa-file-invoice'
+        },
+    })
+    if not input then return end
+    
+    if input[3] == 'society' then
         local playerjob = RSGCore.Functions.GetPlayerData().job.name
         jobcheck = false
         for _, name in pairs(Config.VerifySociety) do
@@ -80,136 +71,138 @@ RegisterNetEvent('rsg-billing:client:billplayer', function()
             end
         end
         if jobcheck == true then
-            TriggerServerEvent('rsg-billing:server:sendSocietyBill', dialog.playerid, dialog.billprice, playerjob)    
+            TriggerServerEvent('rsg-billing:server:sendSocietyBill', input[1], input[2], playerjob)    
         else
             RSGCore.Functions.Notify('you are not part of a society!', 'error')
         end
     end
-    if dialog.billtype == 'player' then
-        TriggerServerEvent('rsg-billing:server:sendPlayerBill', dialog.playerid, dialog.billprice)
+    if input[3] == 'player' then
+        TriggerServerEvent('rsg-billing:server:sendPlayerBill', input[1], input[2])
     end
-end, false)
+end)
 
--- check bills with callback (client:checkbills)
+-- check bills
 RegisterNetEvent('rsg-billing:client:checkbills', function()
-    local PlayerId = GetPlayerServerId(PlayerId())
-    RSGCore.Functions.TriggerCallback('rsg-billing:server:checkbills', function(bills, cid)
-        local BillsShow = {
-            {
-                header = 'Unpaid Bills | ID: ' .. PlayerId,
-                isMenuHeader = true,
-                icon = 'fas fa-file-invoice-dollar',
-            },
-            {
-                header = 'Citizen ID: ' .. cid,
-                isMenuHeader = true,
-                icon = 'fas fa-id-card-clip',
-            },
-        }
-        
-        for _, v in ipairs(bills) do
-            BillsShow[#BillsShow + 1] = {
-                header = 'Amount: ' .. v.amount .. '$',
-                icon = 'fas fa-dollar-sign',
-                txt = 'ID : ' ..v.id ..' | From : ' .. v.sender .. ' | ' .. v.society,
-                params = { event = 'rsg-billing:server:paybills', 
-                    isServer = true,
-                    args = {
-                        sender = v.sender, 
-                        amount = v.amount, 
-                        billid = v.id, 
-                        society = v.society,
-                        citizenid = v.citizenid,
-                        sendercitizenid = v.sendercitizenid
-                    } 
-                }
-            }
-        end
-
-        BillsShow[#BillsShow + 1] = {
-            header = 'Close',
-            icon   = 'fa-solid fa-circle-xmark',
-            txt    = '',
-            params = { event = 'rsg-menu:closeMenu', }
-        }
-
-        exports['rsg-menu']:openMenu(BillsShow)
-    end, PlayerId)
-end)
-
--- cancel bills with callback -> cancel bill confirm
-RegisterNetEvent('rsg-billing:client:deletebills', function()
-
-    RSGCore.Functions.TriggerCallback('rsg-billing:server:checkSentBills', function(sentbills, citizenid)
-
-        local SentBillsShow = {
-            {
-                header = 'Sent Bills',
-                isMenuHeader = true,
-                icon = 'fas fa-file-invoice-dollar',
-            },
-            {
-                header = 'Citizen ID: ' .. citizenid,
-                isMenuHeader = true,
-                icon = 'fas fa-id-card-clip',
-            },
-        }
-        
-        for _, v in ipairs(sentbills) do
-            SentBillsShow[#SentBillsShow + 1] = {
-                header = 'Amount: ' .. v.amount .. '$',
-                icon = 'fas fa-dollar-sign',
-                txt = 'ID : ' .. v.id .. ' | To : ' .. v.citizenid,
-                params = { event = 'rsg-billing:client:cancelbill', 
-                    isServer = false,
-                    args = {
-                        billid = v.id,
-                    } 
-                }
-            }
-        end
-
-        SentBillsShow[#SentBillsShow + 1] = {
-            header = 'Close',
-            icon   = 'fa-solid fa-circle-xmark',
-            txt    = '',
-            params = { event = 'rsg-menu:closeMenu', }
-        }
-
-        exports['rsg-menu']:openMenu(SentBillsShow)
-    end)
-	
-end)
-
--- cancel bill confirm
-RegisterNetEvent('rsg-billing:client:cancelbill', function(data)
-    local dialog = exports['rsg-input']:ShowInput({
-        header = "Cancel Bill",
-        submitText = "Submit",
-        inputs = {
-            {
-                text = "Bill ID : "..data.billid,
-                name = "cancelbill",
-                type = "radio",
+    local citizenid = RSGCore.Functions.GetPlayerData().citizenid
+    RSGCore.Functions.TriggerCallback('rsg-billing:server:checkbills', function(result)
+        print(result)
+        if result == nil then
+            lib.registerContext({
+                id = 'no_bills',
+                title = 'Check Bills',
+                menu = 'bill_mainmenu',
+                onBack = function() end,
                 options = {
-                    { value = "yes", text = "Yes" },
-                    { value = "no", text = "No" },
+                    {
+                        title = 'No Bills',
+                        description = 'you have no bills to pay!',
+                        icon = 'fa-solid fa-box',
+                        disabled = true,
+                        arrow = false
+                    }
+                }
+            })
+            lib.showContext("no_bills")
+        else
+            local options = {}
+            for _, v in pairs(result) do
+                options[#options + 1] = {
+                    title = 'Bill-ID: '..result[1].id,
+                    description = 'Bill from '..result[1].sender..' for the amount of $'..result[1].amount,
+                    icon = 'fa-solid fa-user-check',
+                    serverEvent = 'rsg-billing:server:paybills',
+                    args = {
+                            sender = result[1].sender, 
+                            amount = result[1].amount, 
+                            billid = result[1].id, 
+                            society = result[1].society,
+                            citizenid = result[1].citizenid,
+                            sendercitizenid = result[1].sendercitizenid
+                    },
+                    arrow = true
+                }
+                lib.registerContext({
+                    id = 'checkbills_menu',
+                    title = 'Check Bills',
+                    menu = 'bill_mainmenu',
+                    onBack = function() end,
+                    position = 'top-right',
+                    options = options
+                })
+                lib.showContext('checkbills_menu')
+            end
+        end
+    end, citizenid)
+end)
+
+-- cancel bill
+RegisterNetEvent('rsg-billing:client:deletebills', function()
+    local citizenid = RSGCore.Functions.GetPlayerData().citizenid
+    RSGCore.Functions.TriggerCallback('rsg-billing:server:checkSentBills', function(result)
+        if result == nil then
+            lib.registerContext({
+                id = 'no_sentbills',
+                title = 'Sent Bills',
+                menu = 'bill_mainmenu',
+                onBack = function() end,
+                options = {
+                    {
+                        title = 'No Sent Bills',
+                        description = 'you have not sent any bills!',
+                        icon = 'fa-solid fa-box',
+                        disabled = true,
+                        arrow = false
+                    }
+                }
+            })
+            lib.showContext("no_sentbills")
+        else
+            local options = {}
+            for _, v in pairs(result) do
+                options[#options + 1] = {
+                    title = 'Bill ID: ' .. result[1].id,
+                    description = 'Amount $' .. result[1].amount .. ' | to : ' .. result[1].citizenid,
+                    icon = 'fas fa-dollar-sign',
+                    event = 'rsg-billing:client:cancelbill',
+                    args = {
+                        billid = result[1].id,
+                    },
+                    arrow = true
+                }
+                lib.registerContext({
+                    id = 'sentbills_menu',
+                    title = 'Sent Bills',
+                    menu = 'bill_mainmenu',
+                    onBack = function() end,
+                    position = 'top-right',
+                    options = options
+                })
+                lib.showContext('sentbills_menu')
+            end
+        end
+    end, citizenid)
+end)
+
+-- confirm cancel bill
+RegisterNetEvent('rsg-billing:client:cancelbill', function(data)
+    local input = lib.inputDialog('Cancel Bill', {
+        { 
+            label = 'Bill ID : '..data.billid,
+            type = 'select',
+                options = {
+                    { value = "yes", label = "Yes" },
+                    { value = "no", label = "No" },
                 },
-            },
+            required = true,
         },
     })
-
-    if dialog ~= nil then
-        if Config.Debug == true then
-            print(dialog.cancelbill)
-            print(data.billid)
-        end
-        if dialog.cancelbill == 'yes' then
-            TriggerServerEvent('rsg-billing:server:cancelbill', tonumber(data.billid))
-            RSGCore.Functions.Notify('Bill Canceled!', 'primary')
-        else
-            RSGCore.Functions.Notify('Bill not canceled!', 'primary')
-            return
-        end
+    if not input then return end
+    
+    if input[1] == 'yes' then
+        TriggerServerEvent('rsg-billing:server:cancelbill', tonumber(data.billid))
+        RSGCore.Functions.Notify('Bill Canceled!', 'primary')
+    else
+        RSGCore.Functions.Notify('Action Canceled!', 'primary')
+        return
     end
-end, false)
+end)
