@@ -14,4 +14,4 @@
 - add the following to your server.cfg file : ensure rsg-billing
 
 # Useage
-- trigger the menu buy [F6] Radial Menu / or command : /billing
+- trigger the menu by [F6] Radial Menu / or command : /billing
