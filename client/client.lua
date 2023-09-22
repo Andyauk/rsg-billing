@@ -85,7 +85,6 @@ end)
 RegisterNetEvent('rsg-billing:client:checkbills', function()
     local citizenid = RSGCore.Functions.GetPlayerData().citizenid
     RSGCore.Functions.TriggerCallback('rsg-billing:server:checkbills', function(result)
-        print(result)
         if result == nil then
             lib.registerContext({
                 id = 'no_bills',

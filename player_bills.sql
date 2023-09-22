@@ -7,4 +7,4 @@ CREATE TABLE IF NOT EXISTS `player_bills` (
   `sendercitizenid` varchar(50) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `citizenid` (`citizenid`)
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4;
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
