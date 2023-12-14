@@ -20,9 +20,10 @@ progressbar = {
 
 }
 
-Lang = Locale:new({
-    phrases = Translations,
-    warnOnMissing = true
-})
-
--- Lang:t('error.horse_too_far')
+if GetConvar('rsg_locale', 'en') == 'pt-br' then
+    Lang = Locale:new({
+        phrases = Translations,
+        warnOnMissing = true,
+        fallbackLang = Lang,
+    })
+end
