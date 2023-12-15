@@ -4,7 +4,7 @@ game 'rdr3'
 
 author 'RexShack#3041'
 description 'rsg-billing'
-version '1.0.1'
+version '1.0.2'
 
 client_scripts {
     'client/client.lua'
